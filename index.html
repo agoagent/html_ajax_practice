@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>手机状态</title>
+    <!-- 引入 Bootstrap -->
+    <!-- <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"> -->
+    <!-- <link href="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet"> -->
+
+    <!-- HTML5 Shiv 和 Respond.js 用于让 IE8 支持 HTML5元素和媒体查询 -->
+    <!-- 注意： 如果通过 file://  引入 Respond.js 文件，则该文件无法起效果 -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+</head>
+<body>
+    <!-- jQuery (Bootstrap 的 JavaScript 插件需要引入 jQuery) -->
+    <!-- <script src="https://code.jquery.com/jquery.js"></script> -->
+    <script src="https://cdn.staticfile.org/jquery/2.1.1/jquery.min.js"></script>
+    <!-- 包括所有已编译的插件 -->
+    <script src="./bootstrap/js/bootstrap.min.js"></script>
+    <!-- <script src="https://cdn.staticfile.org/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
+
+    
+    <script src="./js/index.js"></script>
+    <!-- <script type="text/javascript" src="main.php?inf_phone=phone&inf_tester=tester"></script> -->
+    <script type="text/javascript">
+        function get_table_inf(action){
+        //单向型
+            inf_action = 'inf_'+action;
+            $.ajax({
+                async:false,
+                url:"main.php",
+                data:{inf_action : action},
+                success:function(result){
+                    var result = JSON.parse(result);
+                    var html = '';
+                    // console.log(result);
+
+                    top_bar = '<ul>'+'<li class="">手机型号</li>'+'<li'+' style="padding-left:6px;"'+'class="display_area">测试员</li>'+'<li class="">状态</li>'+'</ul>';
+                    html += top_bar;
+
+                    $.each(result, function(commentIndex,comment){
+                        // console.log(comment);
+                        if(action == 'phone'){
+                            $.each(comment, function(phoneIndex, phone){
+                                // console.log(comment);
+                                set_ul_head = '<ul id=ul_id_'+phone[0]+'>';
+                                set_phone = '<li class="phone_names" id=li_phone_id_'+phone[0]+'>'+phone[1]+'</li>';
+                                action_button = '<button value="use" class="use_buttons" id="use_button_'+phone[0]+'">'+'使用</button>'+
+                                '<button value="cancel" class="cancel_buttons" id="cancel_button_'+phone[0]+'">'+'取消</button>'
+                                set_tester = '<li id=li_phoneToTester_id_'+phone[0]+'>'
+                                    +'<select class="selects" id=li_select_id_'+phone[0]+'>'
+                                        +'</select>'
+                                        +action_button
+                                    +'</li>';
+                                set_use_phone = '<li class="use_phones" id=li_phoneToUsePhone_'+phone[0]+'>'+'</li>';
+                                set_ul_tail ='</ul>';
+                                html += set_ul_head+set_phone+set_tester+set_use_phone+set_ul_tail;
+                            });
+                        }
+                        else if(action == 'tester'){
+                            $('.selects').empty();
+                            $(".selects").append('<option value="none">'+'请选择'+'</option>');
+                            select_option();
+                            // console.log(tester_inf['result']);
+                            $.each(tester_inf['result'], function(tester_inf_index, tester_inf_item){
+                                // console.log(tester_inf_item);
+                                $(".selects").append('<option value="'+tester_inf_item['tester_id']+'">'+tester_inf_item['tester_name']+'</option>');
+                            });
+                            $.each(comment, function(testerIndex, tester){
+                                // console.log(comment);
+                                if(tester[3] != null && tester[3] != 'not_use'){
+                                    // console.log(tester);
+                                    $("#li_select_id_"+tester[2]).val(tester[0]);
+                                    $("#li_select_id_"+tester[2]).attr("disabled","disabled");
+                                }else{
+                                    $("#li_select_id_"+tester[2]).val('none');
+                                    $("#li_select_id_"+tester[2]).removeAttr("disabled");
+                                }
+                            });
+                        }
+                        else if(action == 'use_phone'){
+                            $('.use_phones').empty();
+                            $(".selects").each(function(selects_index,selects_item){
+                                selects_id = $(this).attr("id").replace('li_select_id_', '');
+                                if($(this).prop("disabled")==true){
+                                    use_phone_state = '已使用';
+                                    $('#ul_id_'+selects_id).addClass("phone_state_use");
+                                }else{
+                                    use_phone_state = '未使用';
+                                    $('#ul_id_'+selects_id).removeClass("phone_state_use");
+                                }
+                                $('#li_phoneToUsePhone_'+selects_id).append(use_phone_state);
+                            });
+                        }
+                    });
+                    if(action == 'phone'){
+                        $('#active_inf_docker').empty(html);
+                        $('#active_inf_docker').append(html);
+                    }
+                }
+            })
+        }
+
+
+        //计时器
+        var interval = null;//计时器
+        var i = 0;
+        function start_time(){//启动计时器函数
+            if(interval!=null){//判断计时器是否为空
+                clearInterval(interval);
+                interval=null;
+            }
+            interval = setInterval(overs_time,1000);//启动计时器，调用overs函数，
+        }
+        
+        function overs_time(){
+            if(i == 3)
+            i++;
+            get_table_inf('tester');
+            get_table_inf('use_phone');
+            // console.log(i);	
+            if(i == 6){
+                i = 0;
+            }
+        }
+        
+        function stop_time(){
+            
+            clearInterval(interval);
+            interval = null;
+        }
+        //--计时器end
+
+        function select_check(){
+            // 检测下拉框是否被点击
+            $("body").click(function(){
+                var className=window.event.srcElement.className;
+                // console.log(className);
+                if(className.indexOf("selects") >= 0){
+                    // console.log("class");
+                    var length= $(".selects").find("option").length;
+                    if(length!=0){
+                        // console.log("stop");
+                        stop_time();
+                        setTimeout(function(){
+                            start_time();
+                        }, 10000);
+                    }
+                }else{
+                    // console.log("run")
+                }
+            })
+        }
+
+        function button_use(){
+            $.each($(".use_buttons"), function(buttons_index, button_item){
+                $(this).click(function(){
+                //    console.log($(this).text());
+                    values = {};
+                    $.each($(".phone_names"), function(phone_names_index, phone_names_item){
+                        if(buttons_index == phone_names_index){
+                            phone_num = $(this).attr("id").replace('li_phone_id_', '');
+                        //    console.log(phone_num);
+                        }
+                    });
+                    $.each($(".selects"), function(selects_index, selects_item){
+                        if(buttons_index == selects_index){
+                        // console.log($(this).find("option:selected").value());
+                        // console.log($(this).val());
+                        tester_num = $(this).val();
+                        }
+                    });
+                    values = {'phone_num': phone_num, 'tester_num': tester_num};
+                    //    console.log(values);
+                       if(values['tester_num'] == 'none'){
+                           alert('请选择使用者');
+                       }
+                    $.ajax({
+                        async:false,
+                        url:"main.php",
+                        data:{'inf_action': 'insert_inf', values},
+                        success:function(result){
+                            var result = JSON.parse(result);
+                            // console.log(result);
+                            if(result['result'] == true){
+                                // alert('已提交');
+                                get_table_inf('tester');
+                                get_table_inf('use_phone');
+                            }else if(result['result'] == 'the phone are used'){
+                                alert('已是使用状态');
+                                get_table_inf('tester');
+                                get_table_inf('use_phone');
+                            }else{
+                                alert('错误，请反馈到开发者');
+                                // console.log(result['result']);
+                                get_table_inf('tester');
+                                get_table_inf('use_phone');
+                            }
+                        }
+                    })
+                });
+            })
+        }
+
+        function button_cancel(){
+            $.each($(".cancel_buttons"), function(buttons_index, button_item){
+                $(this).click(function(){
+                //    console.log($(this).text());
+                    values = {};
+                    $.each($(".phone_names"), function(phone_names_index, phone_names_item){
+                        if(buttons_index == phone_names_index){
+                            phone_num = $(this).attr("id").replace('li_phone_id_', '');
+                        //    console.log(phone_num);
+                        }
+                    });
+                    $.each($(".selects"), function(selects_index, selects_item){
+                        if(buttons_index == selects_index){
+                        // console.log($(this).find("option:selected").value());
+                        // console.log($(this).val());
+                        tester_num = $(this).val();
+                        }
+                    });
+                    values = {'phone_num': phone_num, 'tester_num': tester_num};
+                    //    console.log(values);
+                    $.ajax({
+                        async:false,
+                        url:"main.php",
+                        data:{'inf_action': 'update_inf_to_cancel', values},
+                        success:function(result){
+                            var result = JSON.parse(result);
+                            // console.log(result);
+                            if(result['result'] == true){
+                                // alert('已取消');
+                                get_table_inf('tester');
+                                get_table_inf('use_phone');
+                            }else if(result['result'] == 'the phone are cancel'){
+                                alert('已是取消状态');
+                                get_table_inf('tester');
+                                get_table_inf('use_phone');
+                            }else{
+                                alert('错误，请反馈到开发者');
+                                // console.log(result['result']);
+                                get_table_inf('tester');
+                                get_table_inf('use_phone');
+                            }
+                        }
+                    })
+                });
+            })
+        }
+
+        $(document).ready(function(){
+            get_table_inf('phone');
+            get_table_inf('tester');
+            get_table_inf('use_phone');
+        });
+
+        $(function(){
+            start_time();
+            select_check();
+            button_use();
+            button_cancel();
+        });
+
+        function select_option(){
+            // console.log("select_option");
+            $.ajax({
+                    async:false,
+                    url:"main.php",
+                    data:{'inf_action': 'search_option', },
+                    success:function(result){
+                        var result = JSON.parse(result);
+                        tester_inf = result;
+                    }
+                })
+        }
+
+    </script>
+    
+    <style>
+        #active_inf_docker ul,li{ padding:0;margin:0;list-style:none;}
+        #active_inf_docker ul li{
+            width: 33%;margin:0;
+            /* border: solid 1px black;  */
+            float: left;
+            }
+        #active_inf_docker ul{width: 100%;margin:0;float: left;}
+
+        .selects{height: 23px;}
+
+        .phone_state_use{ background-color: greenyellow;}
+        .phone_state_unuse{ background-color: white;}
+    </style>
+
+    <div id='active_inf_docker'>
+    </div>
+    
+</body>
+</html>
